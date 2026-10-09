@@ -73,12 +73,20 @@ struct AlbumDetailView: View {
                 .id(readingChapter)
                 .frame(minWidth: 900, idealWidth: 1080, minHeight: 600, idealHeight: 860)
         }
-        // 预览查看器：与阅读器完全隔离，只读图，不写历史/进度
+        // 两指向右滑返回（弹窗打开时自动暂停）
+        .swipeBackToPrevious(enabled: !showingComments && !showPreviewViewer && reading == nil) {
+            if !path.isEmpty { path.removeLast() }
+        }
+        // 关闭详情页 → 让刚才那个列表回到记忆中的位置
+        .onDisappear {
+            ScrollMemory.shared.requestRestoreForLastVisible()
+        }
         .sheet(isPresented: $showingComments) {
             if let album {
                 CommentsView(albumId: album.id, albumTitle: album.title)
             }
         }
+        // 预览查看器：与阅读器完全隔离，只读图，不写历史/进度
         .sheet(isPresented: $showPreviewViewer) {
             PreviewViewer(images: previews, startIndex: previewIndex)
                 .frame(minWidth: 600, minHeight: 500)
@@ -503,6 +511,8 @@ private struct PreviewViewer: View {
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
         }
+        // 两指向右滑 = 关掉预览（本页翻图用的是左右箭头按钮，不会撞车）
+        .swipeBackToPrevious { dismiss() }
     }
 
     private func prev() {

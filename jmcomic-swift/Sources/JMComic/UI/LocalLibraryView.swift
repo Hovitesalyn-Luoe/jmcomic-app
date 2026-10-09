@@ -146,6 +146,8 @@ struct LocalAlbumDetailView: View {
             .padding(20)
         }
         .navigationTitle(album.meta.title)
+        // 关闭本地详情 → 让本地漫画列表回到记忆位置
+        .onDisappear { ScrollMemory.shared.requestRestoreForLastVisible() }
         .sheet(item: $reading) { chapter in
             LocalReaderView(chapter: chapter, meta: album.meta)
                 .frame(minWidth: 700, minHeight: 500)

@@ -341,7 +341,7 @@ struct BrowseView: View {
                 }
             }
             // 记住/恢复滚动位置 + 响应工具栏「回到顶部」
-            .scrollMemory(page: selection.scrollKey, scrolledID: $scrolledID, topID: shown.first?.id)
+            .scrollMemory(page: selection.scrollKey, scrolledID: $scrolledID, topID: shown.first?.id, atRoot: path.isEmpty)
             .coordinateSpace(name: "jmfeed")
             .onPreferenceChange(ScrollOffsetKey.self) { minY in
                 // 内容顶相对视口顶的偏移（向下为正）

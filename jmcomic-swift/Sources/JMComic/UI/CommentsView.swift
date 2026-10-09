@@ -62,6 +62,8 @@ struct CommentsView: View {
             }
         }
         .frame(width: 560, height: 620)
+        // 往右滑关闭评论
+        .swipeBackToPrevious { dismiss() }
         .task(id: albumId) { await load(next: 1) }
         .navigationTitle(albumTitle)
     }

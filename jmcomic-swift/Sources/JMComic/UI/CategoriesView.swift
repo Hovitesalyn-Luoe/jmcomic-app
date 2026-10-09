@@ -256,7 +256,7 @@ struct CategoriesView: View {
                 .scrollTargetLayout()
                       .padding(18)
                 }
-                    .scrollMemory(page: "categories", scrolledID: $scrolledID, topID: items.first?.id)
+                    .scrollMemory(page: "categories", scrolledID: $scrolledID, topID: items.first?.id, atRoot: path.isEmpty)
             }
         }
     }

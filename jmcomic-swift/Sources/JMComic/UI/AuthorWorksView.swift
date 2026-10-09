@@ -51,6 +51,10 @@ struct AuthorWorksView: View {
                     .padding(.bottom, 26)
             }
         }
+        // 往右滑返回
+        .swipeBackToPrevious {
+            if !path.isEmpty { path.removeLast() }
+        }
         .navigationTitle("作者：\(author)")
         .task(id: author) { await load(next: 1) }
     }

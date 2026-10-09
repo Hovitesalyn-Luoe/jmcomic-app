@@ -102,7 +102,7 @@ struct PersonalizedView: View {
             .scrollTargetLayout()
             .padding(18)
         }
-        .scrollMemory(page: "personalized", scrolledID: $scrolledID, topID: items.first?.id)
+        .scrollMemory(page: "personalized", scrolledID: $scrolledID, topID: items.first?.id, atRoot: path.isEmpty)
     }
 
     // MARK: - 算法

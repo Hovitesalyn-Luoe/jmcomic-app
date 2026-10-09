@@ -89,6 +89,6 @@ struct FavoritesView: View {
                 .padding(18)
             }
         }
-        .scrollMemory(page: "favorites", scrolledID: $scrolledID, topID: shown.first?.id)
+        .scrollMemory(page: "favorites", scrolledID: $scrolledID, topID: shown.first?.id, atRoot: path.isEmpty)
     }
 }
