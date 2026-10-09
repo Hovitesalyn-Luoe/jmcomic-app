@@ -17,6 +17,28 @@
   <a href="https://linux.do" title="linux.do · 新的理想型社区"><img alt="linux.do" src="assets/linuxdo-badge.svg" /></a>
 </p>
 
+## 本仓库是个人 fork
+
+上游：[GuyCui/jmcomic-app](https://github.com/GuyCui/jmcomic-app)（MIT，见 [LICENSE](LICENSE)）。
+本 fork 只做个人使用所需的修复与增强，构建产物**不含任何个人数据**；
+现成安装包见 [Releases](../../releases)（macOS / Apple 芯片，ad-hoc 签名）。
+
+相对于上游的改动：
+
+| 改动 | 说明 |
+| --- | --- |
+| **热门页修复** | 上游用"空关键词搜索"取热门，服务端已作废（恒定返回 `total:0` / `content:[]`），热门页因此永远空白；改为 `categories/filter?o=mv` |
+| **作者可点击** | 详情页作者可点，跳到"该作者的所有作品"（JM 无作者实体，按名字搜索） |
+| **菜单栏汉化** | 增加 `zh-Hans.lproj` 与本地化声明，系统标准菜单（文件 / 编辑 / 显示 / 窗口 / 帮助）显示中文 |
+| **⌘S 开关侧边栏** | 状态驱动（不依赖 AppKit 响应链），并记住展开状态 |
+| **下载位置设置** | 设置页新增「下载」卡片：显示 / 更改保存路径、在访达中打开、恢复默认 |
+| **凭证本地化** | Token / 同步密码 / 本地库密钥由钥匙串改为本地文件（0600），避免 ad-hoc 签名下每次重编都弹窗 |
+| **同步克隆修复** | `SyncStore` 首次 `clone` 私有仓库时补上认证头 |
+| **构建脚本修复** | 产物路径改用 `swift build --show-bin-path`；二进制如实记录编译所用 SDK |
+
+安装包为 **ad-hoc 签名**：首次打开请右键 →「打开」，或到「系统设置 → 隐私与安全性」点「仍要打开」。
+凭证保存在 `~/Library/Application Support/JMComic/secrets/`（仅当前用户可读）。
+
 <p align="center">
   <a href="#-下载安装">📦 下载</a> ·
   <a href="#-功能">✨ 功能</a> ·
