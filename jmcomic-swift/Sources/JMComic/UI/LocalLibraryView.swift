@@ -48,6 +48,9 @@ struct LocalLibraryView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    /// 网格滚动位置（顶部可见项 id）
+    @State private var scrolledID: String?
+
     private var grid: some View {
         ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 18) {
@@ -76,6 +79,7 @@ struct LocalLibraryView: View {
                     }
                 }
             }
+            .scrollMemory(page: "local", scrolledID: $scrolledID, topID: downloads.library.first?.id)
             .padding(18)
         }
     }

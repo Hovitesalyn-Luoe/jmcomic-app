@@ -7,6 +7,8 @@ struct FavoritesView: View {
     @ObservedObject private var favorites = FavoriteStore.shared
     @State private var folder = "默认"
     @State private var path: [Route] = []
+    /// 当前页滚动位置（顶部可见项 id），交给 ScrollMemory 记忆/回顶
+    @State private var scrolledID: String?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -73,6 +75,7 @@ struct FavoritesView: View {
                             }
                         }
                         .buttonStyle(.plain)
+                        .id(entry.meta.id)
                         .contextMenu {
                             Button("移除收藏") { favorites.remove(entry.meta.id) }
                             Divider()
@@ -82,6 +85,7 @@ struct FavoritesView: View {
                         }
                     }
                 }
+                .scrollMemory(page: "favorites", scrolledID: $scrolledID, topID: shown.first?.id)
                 .padding(18)
             }
         }

@@ -12,6 +12,9 @@ struct SettingsView: View {
     @ObservedObject private var favorites = FavoriteStore.shared
     @ObservedObject private var downloads = DownloadStore.shared
 
+    /// 设置页只响应「回到顶部」（静态两栏，不做位置记忆）
+    @State private var scrolledID: String?
+
     @State private var notice: String?
     @State private var isError = false
 
@@ -49,6 +52,8 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                // 顶部哨兵：工具栏「回到顶部」用它定位
+                Color.clear.frame(height: 0).id("settings-top")
                 Text("设置").font(.title2.weight(.semibold))
                 LazyVGrid(columns: [
                     GridItem(.flexible(minimum: 330), alignment: .top),
@@ -69,6 +74,7 @@ struct SettingsView: View {
             }
             .padding(20)
             .frame(maxWidth: 900, alignment: .leading)
+            .scrollMemory(page: "settings", scrolledID: $scrolledID, topID: "settings-top", remember: false)
         }
     }
 

@@ -6,6 +6,8 @@ struct RecentView: View {
 
     @ObservedObject private var library = LibraryStore.shared
     @State private var path: [Route] = []
+    /// 当前页滚动位置（顶部可见项 id），交给 ScrollMemory 记忆/回顶
+    @State private var scrolledID: String?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -33,9 +35,11 @@ struct RecentView: View {
                                     }
                                 }
                                 .buttonStyle(.plain)
+                                .id(meta.id)
                             }
                         }
-                        .padding(18)
+                        .scrollMemory(page: "recent", scrolledID: $scrolledID, topID: library.recentlyViewed.first?.id)
+                .padding(18)
                     }
                 }
             }

@@ -52,6 +52,8 @@ struct CategoriesView: View {
     @State private var error: String?
     @State private var hotTags: [String] = []
     @State private var path: [Route] = []
+    /// 右栏结果区的滚动位置（左栏按哥哥要求不做记忆）
+    @State private var scrolledID: String?
     @StateObject private var library = LibraryStore.shared
     /// 请求序号：防快速切换时旧请求覆盖新结果（竞态）
     @State private var loadSeq = 0
@@ -251,7 +253,8 @@ struct CategoriesView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(18)
+                    .scrollMemory(page: "categories", scrolledID: $scrolledID, topID: items.first?.id)
+                      .padding(18)
                 }
             }
         }

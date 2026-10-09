@@ -68,6 +68,19 @@ enum SidebarItem: Hashable {
     case favorites
     case local
     case settings
+
+    /// 滚动位置记忆用的页面键（只在内存里用，重启不保留）
+    var scrollKey: String {
+        switch self {
+        case .feed(let f): return "feed-\(f.rawValue)"
+        case .personalized: return "personalized"
+        case .categories: return "categories"
+        case .recent: return "recent"
+        case .favorites: return "favorites"
+        case .local: return "local"
+        case .settings: return "settings"
+        }
+    }
 }
 
 struct BrowseView: View {
@@ -79,6 +92,9 @@ struct BrowseView: View {
 
     @StateObject private var library = LibraryStore.shared
     @StateObject private var downloads = DownloadStore.shared
+
+    /// 当前 feed 的滚动位置（顶部可见项 id），交给 ScrollMemory 记忆/回顶
+    @State private var scrolledID: String?
 
     /// 每个 tab 完全独立的浏览状态：切走不丢、重启后也从缓存恢复
     private struct FeedState {
@@ -199,6 +215,8 @@ struct BrowseView: View {
             }
         }
         .onChange(of: selection) { old, new in
+            // 切页时先把滚动位置对齐到目标页记忆的位置（同一 @State 被多个 feed 复用）
+            scrolledID = ScrollMemory.shared.position(for: new.scrollKey)
             if case .feed(let f) = old {
                 feedStates[f]?.scrollID = scrollID
                 feedStates[f]?.scrollOffset = scrollOffset
@@ -234,6 +252,16 @@ struct BrowseView: View {
         .searchable(text: $query, prompt: "搜索本子或作者")
         .onSubmit(of: .search) { Task { await runSearch() } }
         .toolbar {
+            // 回到当前标签页顶部
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    ScrollMemory.shared.requestTop(for: selection.scrollKey)
+                } label: {
+                    Image(systemName: "arrow.up.to.line")
+                }
+                .help("回到顶部")
+                .accessibilityLabel("回到顶部")
+            }
             // 刷新当前列表（热门/最新）；不碰搜索框位置
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -280,8 +308,8 @@ struct BrowseView: View {
                         .id(meta.id)
                     }
                 }
-                // 记住/恢复滚动位置：切 tab 不再回顶
-                .scrollPosition(id: $scrollID)
+                // 记住/恢复滚动位置 + 响应工具栏「回到顶部」
+                .scrollMemory(page: selection.scrollKey, scrolledID: $scrolledID, topID: shown.first?.id)
                 .padding(18)
 
                 if st.loading {

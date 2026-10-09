@@ -17,6 +17,8 @@ struct PersonalizedView: View {
     @State private var loading = true
     @State private var error: String?
     @State private var path: [Route] = []
+    /// 当前页滚动位置（顶部可见项 id），交给 ScrollMemory 记忆/回顶
+    @State private var scrolledID: String?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -94,9 +96,11 @@ struct PersonalizedView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .id(meta.id)
                 }
             }
-            .padding(18)
+            .scrollMemory(page: "personalized", scrolledID: $scrolledID, topID: items.first?.id)
+                .padding(18)
         }
     }
 
