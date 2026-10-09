@@ -229,7 +229,8 @@ final class SyncStore: ObservableObject {
 
         // 1. 初始化仓库（没有则 clone）
         if !FileManager.default.fileExists(atPath: dir.appendingPathComponent(".git").path) {
-            guard git(["clone", repoURL, dir.path]) else {
+            // 私有仓库必须带认证头，否则 clone 一定失败（后面 pull/push 都带了 extraAuth，这里原先漏了）
+            guard git(["clone", repoURL, dir.path], extraAuth: true) else {
                 lastError = "克隆仓库失败：检查仓库地址 / Token 权限（需 repo 权限）"
                 return
             }
