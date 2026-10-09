@@ -31,6 +31,11 @@ rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 cp "$BIN_PATH" "$APP_DIR/Contents/MacOS/${APP_NAME}"
 # App 图标（与 AppIcon.icns 同目录，缺失则跳过，不阻塞构建）
+# 中文界面：放一个真实的 zh-Hans.lproj，系统才会认为本 App"支持中文"，
+# 进而把标准菜单栏（File/Edit/View/Window/Help 及其展开项）也按中文渲染
+mkdir -p "$APP_DIR/Contents/Resources/zh-Hans.lproj"
+: > "$APP_DIR/Contents/Resources/zh-Hans.lproj/Localizable.strings"
+
 if [ -f "AppIcon.icns" ]; then
     cp "AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.icns"
 fi
@@ -54,6 +59,14 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
     <key>NSHighResolutionCapable</key><true/>
     <!-- 图片走 HTTPS，无需 ATS 例外 -->
     <key>NSHumanReadableCopyright</key><string>Local build. Personal use.</string>
+    <!-- 声明中文：系统据此把标准菜单栏（File/Edit/View/Window/Help）渲染为中文 -->
+    <key>CFBundleDevelopmentRegion</key><string>zh-Hans</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>zh-Hans</string>
+        <string>zh-Hant</string>
+        <string>en</string>
+    </array>
     <!-- 局域网 web 服务的本地网络权限说明（macOS 15+ 弹窗文案） -->
     <key>NSLocalNetworkUsageDescription</key><string>JMComic 需要在同一局域网内接受手机浏览器的访问，以便扫码阅读漫画。</string>
 </dict>
