@@ -74,11 +74,32 @@ struct CategoriesView: View {
         }
         .navigationTitle("分类")
         .task {
-            await loadTags()
-            // 恢复上次的勾选，并直接把结果取回来（回到上次的状态）
+            // ① 先用缓存立即还原（切走再切回不该等网络；旧版要等 1 秒才显示勾选）
+            if !Self.pageCache.hotTags.isEmpty { hotTags = Self.pageCache.hotTags }
+            if selected.isEmpty { selected = Self.pageCache.selection }
+            if items.isEmpty { items = Self.pageCache.items }
+            // ② 磁盘里的上次勾选（重启后第一次进来）
             restoreSelectionIfNeeded()
+
+            // ③ 再在后台刷新（标签列表 + 当前选择的结果），不阻塞界面还原
+            await loadTags()
+            if !selected.isEmpty {
+                loadSeq += 1
+                let seq = loadSeq
+                await load(selected, seq: seq)
+            }
         }
     }
+
+    // MARK: - 页面缓存
+
+    /// 跨视图重建的内存缓存：切走再切回立即还原，不重新拉网络。
+    private struct PageCache {
+        var hotTags: [String] = []
+        var items: [AlbumMeta] = []
+        var selection: Set<SideItem> = []
+    }
+    private static var pageCache = PageCache()
 
     // MARK: - 记住上次的勾选
 
@@ -86,6 +107,7 @@ struct CategoriesView: View {
 
     private func saveSelection() {
         UserDefaults.standard.set(selected.map(\.storageKey), forKey: Self.savedSelectionKey)
+        Self.pageCache.selection = selected
     }
 
     private static func item(forStorageKey key: String) -> SideItem? {
@@ -108,9 +130,7 @@ struct CategoriesView: View {
         let restored = keys.compactMap { Self.item(forStorageKey: $0) }
         guard !restored.isEmpty else { return }
         selected = Set(restored)
-        loadSeq += 1
-        let seq = loadSeq
-        Task { await load(selected, seq: seq) }
+        Self.pageCache.selection = selected
     }
 
     // MARK: - 左栏（固定分类列表）
@@ -246,6 +266,7 @@ struct CategoriesView: View {
     private func loadTags() async {
         if let tags = try? await JmClient.shared.hotTags() {
             hotTags = tags
+            Self.pageCache.hotTags = tags
         }
     }
 
@@ -310,6 +331,7 @@ struct CategoriesView: View {
             }
             guard seq == loadSeq else { return }
             items = await library.filterByExclusions(raw)
+            Self.pageCache.items = items
         } catch {
             if seq == loadSeq { self.error = error.localizedDescription }
         }
