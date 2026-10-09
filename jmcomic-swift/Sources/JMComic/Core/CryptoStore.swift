@@ -32,30 +32,15 @@ enum CryptoStore {
     }
 
     private static func loadOrCreateKey() -> SymmetricKey? {
-        var query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecReturnData as String: true,
-        ]
-        var item: CFTypeRef?
-        if SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-           let data = item as? Data, data.count == 32 {
+        // 本地文件存储（原为钥匙串：ad-hoc 签名每次重编身份都变，会反复弹窗）
+        if let data = LocalSecrets.read(service: service, account: account), data.count == 32 {
             return SymmetricKey(data: data)
         }
 
         var raw = Data(count: 32)
         guard raw.withUnsafeMutableBytes({ SecRandomCopyBytes(kSecRandomDefault, 32, $0.baseAddress!) }) == errSecSuccess
         else { return nil }
-        let add: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecValueData as String: raw,
-            // 开机解锁后即可访问：headless 后台模式（无 GUI 会话）也能读
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
-        ]
-        guard SecItemAdd(add as CFDictionary, nil) == errSecSuccess else { return nil }
+        guard LocalSecrets.write(raw, service: service, account: account) else { return nil }
         return SymmetricKey(data: raw)
     }
 

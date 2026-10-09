@@ -239,14 +239,10 @@ final class LanSyncServer: ObservableObject {
         listeningPort = nil
     }
 
-    /// 自检专用关停：额外清理测试实例产生的钥匙串条目与 UserDefaults suite，零残留。
+    /// 自检专用关停：额外清理测试实例产生的本地凭证与 UserDefaults suite，零残留。
     func shutdownForTests(suiteName: String?) {
         for d in devices {
-            SecItemDelete([
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: _keychainService,
-                kSecAttrAccount as String: d.id,
-            ] as CFDictionary)
+            LocalSecrets.delete(service: _keychainService, account: d.id)
         }
         stopListening()
         devices = []
@@ -286,11 +282,7 @@ final class LanSyncServer: ObservableObject {
     // MARK: - 设备管理
 
     func revoke(_ deviceID: String) {
-        SecItemDelete([
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: _keychainService,
-            kSecAttrAccount as String: deviceID,
-        ] as CFDictionary)
+        LocalSecrets.delete(service: _keychainService, account: deviceID)
         tokenCache.removeValue(forKey: deviceID)
         devices.removeAll { $0.id == deviceID }
         saveDevices()
@@ -515,16 +507,8 @@ final class LanSyncServer: ObservableObject {
 
     private func chainRecord(for deviceID: String) -> (token: String, code: String)? {
         if let hit = tokenCache[deviceID] { return hit }
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: _keychainService,
-            kSecAttrAccount as String: deviceID,
-            kSecReturnData as String: true,
-        ]
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data,
-              let raw = String(data: data, encoding: .utf8) else { return nil }
+        guard let data = LocalSecrets.read(service: _keychainService, account: deviceID),
+                let raw = String(data: data, encoding: .utf8) else { return nil }
         let parts = raw.split(separator: "|", maxSplits: 1, omittingEmptySubsequences: false)
         guard parts.count == 2 else { return nil }
         let rec = (token: String(parts[0]), code: String(parts[1]))
@@ -683,17 +667,9 @@ final class LanSyncServer: ObservableObject {
         let deviceId = UUID().uuidString
         // 钥匙串一条记齐两样：会话 token + 配对时刻的配对码（后者是 pull/push 的派生密码）
         let stored = "\(sessionToken)|\(pairCode)"
-        let add: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: _keychainService,
-            kSecAttrAccount as String: deviceId,
-            kSecValueData as String: Data(stored.utf8),
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
-        ]
-        SecItemDelete(add as CFDictionary)
-        guard SecItemAdd(add as CFDictionary, nil) == errSecSuccess else {
-            return .json(500, ["error": "钥匙串写入失败"])
-        }
+        guard LocalSecrets.write(string: stored, service: _keychainService, account: deviceId) else {
+                return .json(500, ["error": "本地凭证写入失败"])
+            }
         tokenCache[deviceId] = (sessionToken, pairCode)
         devices.append(LanDevice(id: deviceId, name: name, pairedAt: Date()))
         saveDevices()

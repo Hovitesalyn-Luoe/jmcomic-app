@@ -36,56 +36,24 @@ final class SyncStore: ObservableObject {
         tokenConfigured = readToken() != nil && !repoURL.isEmpty
     }
 
-    // MARK: - 钥匙串凭证
+    // MARK: - 本地凭证（原为钥匙串；ad-hoc 签名每次重编身份都会变，导致反复弹窗）
 
     func setToken(_ token: String) {
-        var add: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: tokenAccount,
-            kSecValueData as String: Data(token.utf8),
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
-        ]
-        SecItemDelete(add as CFDictionary)
-        SecItemAdd(add as CFDictionary, nil)
+        LocalSecrets.write(string: token, service: service, account: tokenAccount)
         tokenConfigured = readToken() != nil && !repoURL.isEmpty
     }
 
     func setSyncPassword(_ pw: String) {
-        var add: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: passwordAccount,
-            kSecValueData as String: Data(pw.utf8),
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
-        ]
-        SecItemDelete(add as CFDictionary)
-        SecItemAdd(add as CFDictionary, nil)
+        LocalSecrets.write(string: pw, service: service, account: passwordAccount)
     }
 
     private func readToken() -> String? {
-        var query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: tokenAccount,
-            kSecReturnData as String: true,
-        ]
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
+        guard let data = LocalSecrets.read(service: service, account: tokenAccount) else { return nil }
         return String(data: data, encoding: .utf8)
     }
 
     private func readSyncPassword() -> String? {
-        var query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: passwordAccount,
-            kSecReturnData as String: true,
-        ]
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
+        guard let data = LocalSecrets.read(service: service, account: passwordAccount) else { return nil }
         return String(data: data, encoding: .utf8)
     }
 
