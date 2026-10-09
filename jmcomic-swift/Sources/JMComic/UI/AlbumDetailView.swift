@@ -214,7 +214,26 @@ struct AlbumDetailView: View {
 
                 VStack(alignment: .leading, spacing: 9) {
                     Text(album.title).font(.title2.weight(.semibold)).lineLimit(3)
-                    Text(album.authorText).foregroundStyle(.secondary)
+                    // 作者可点击：跳到"该作者的所有作品"（JM 没有作者实体，按作者名搜索）
+                    if album.authors.isEmpty {
+                        Text("未知作者").foregroundStyle(.secondary)
+                    } else {
+                        HStack(spacing: 4) {
+                            ForEach(Array(album.authors.enumerated()), id: \.offset) { idx, name in
+                                if idx > 0 {
+                                    Text("，").foregroundStyle(.secondary)
+                                }
+                                Button {
+                                    path.append(.author(name))
+                                } label: {
+                                    Text(name).underline()
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundStyle(Color.accentColor)
+                                .help("查看 \(name) 的所有作品")
+                            }
+                        }
+                    }
 
                     // 专辑 ID：可选中 / 一键复制（方便搜索、分享）
                     HStack(spacing: 6) {

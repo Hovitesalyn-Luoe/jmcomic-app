@@ -34,6 +34,8 @@ struct PersonalizedView: View {
                 switch route {
                 case .album(let meta):
                     AlbumDetailView(meta: meta, path: $path)
+                case .author(let name):
+                    AuthorWorksView(author: name, path: $path)
                 }
             }
         }

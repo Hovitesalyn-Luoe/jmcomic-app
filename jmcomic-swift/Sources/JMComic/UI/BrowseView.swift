@@ -3,6 +3,8 @@ import AppKit
 
 enum Route: Hashable {
     case album(AlbumMeta)
+    /// 作者作品页（JM 没有作者实体，按作者名搜索即为"该作者的所有作品"）
+    case author(String)
 }
 
 enum Feed: String, CaseIterable, Identifiable {
@@ -189,6 +191,8 @@ struct BrowseView: View {
                             switch route {
                             case .album(let meta):
                                 AlbumDetailView(meta: meta, path: $path)
+                            case .author(let name):
+                                AuthorWorksView(author: name, path: $path)
                             }
                         }
                 }
