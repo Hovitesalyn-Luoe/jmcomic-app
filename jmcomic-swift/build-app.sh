@@ -13,6 +13,9 @@ cd "$(dirname "$0")"
 APP_NAME="JMComic"
 BUNDLE_ID="local.jmcomic.reader"
 VERSION="1.2.0"
+# 本 fork 的发布标记：与 GitHub Release 的 tag 一致，"检查更新"拿它比对。
+# 可用环境变量覆盖：RELEASE_TAG=v1.2.0-fix4 ./build-app.sh
+RELEASE_TAG="${RELEASE_TAG:-v1.2.0-fix3}"
 APP_DIR="dist/${APP_NAME}.app"
 
 echo "==> 构建 release"
@@ -49,6 +52,7 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
     <key>CFBundleDisplayName</key><string>${APP_NAME}</string>
     <key>CFBundleIdentifier</key><string>${BUNDLE_ID}</string>
     <key>CFBundleVersion</key><string>${VERSION}</string>
+    <key>JMReleaseTag</key><string>${RELEASE_TAG}</string>
     <key>CFBundleShortVersionString</key><string>${VERSION}</string>
     <key>CFBundleExecutable</key><string>${APP_NAME}</string>
     <key>CFBundlePackageType</key><string>APPL</string>

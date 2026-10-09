@@ -90,6 +90,7 @@ struct BrowseView: View {
     @AppStorage("sidebarVisible") private var sidebarVisible = true
     @State private var path: [Route] = []
 
+    @StateObject private var updates = UpdateChecker.shared
     @StateObject private var library = LibraryStore.shared
     @StateObject private var downloads = DownloadStore.shared
 
@@ -249,6 +250,18 @@ struct BrowseView: View {
             }
         }
         .task { await restoreOrLoad(.hot) }
+        // 启动时检查一次更新（受设置里的开关控制，默认开）；
+        // 发现新版本弹窗，点一下直接去 Release 页面。
+        .onAppear { updates.checkOnLaunch() }
+        .alert("发现新版本", isPresented: Binding(
+            get: { updates.pendingTag != nil },
+            set: { if !$0 { updates.dismiss() } }
+        )) {
+            Button("前往下载") { updates.openPending() }
+            Button("以后再说", role: .cancel) { updates.dismiss() }
+        } message: {
+            Text("当前版本 \(updates.currentTag)，最新版本 \(updates.pendingTag ?? "")。是否前往下载？")
+        }
         .searchable(text: $query, prompt: "搜索本子或作者")
         .onSubmit(of: .search) { Task { await runSearch() } }
         .toolbar {
