@@ -193,6 +193,16 @@ actor JmClient {
         return JmParser.parsePaged(json, page: page)
     }
 
+    /// 评论列表（JM 移动端 /forum；上游只显示数量，没有查看入口）
+    func comments(albumId: String, page: Int) async throws -> (items: [AlbumComment], total: Int) {
+        let json = try await getJSON(path: "forum", query: [
+            .init(name: "mode", value: "manhua"),
+            .init(name: "aid", value: albumId),
+            .init(name: "page", value: String(page)),
+        ])
+        return JmParser.parseComments(json)
+    }
+
     /// 热门标签（服务端真实数据；纯数组/{"list":[...]} 两种格式都被归一化）
     func hotTags() async throws -> [String] {
         let json = try await getJSON(path: "hot_tags")

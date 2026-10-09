@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import CoreGraphics
 
 /// 封面。宽高比固定 3:4，加载中不撑变版面。
@@ -41,6 +42,7 @@ struct AlbumDetailView: View {
     @State private var reading: Album?
     @State private var readingChapter = 0
     @State private var showPreviewViewer = false
+    @State private var showingComments = false
     @State private var previewIndex = 0
     @State private var previewFailed = false
 
@@ -72,6 +74,11 @@ struct AlbumDetailView: View {
                 .frame(minWidth: 900, idealWidth: 1080, minHeight: 600, idealHeight: 860)
         }
         // 预览查看器：与阅读器完全隔离，只读图，不写历史/进度
+        .sheet(isPresented: $showingComments) {
+            if let album {
+                CommentsView(albumId: album.id, albumTitle: album.title)
+            }
+        }
         .sheet(isPresented: $showPreviewViewer) {
             PreviewViewer(images: previews, startIndex: previewIndex)
                 .frame(minWidth: 600, minHeight: 500)
@@ -226,10 +233,13 @@ struct AlbumDetailView: View {
                                 Button {
                                     path.append(.author(name))
                                 } label: {
-                                    Text(name).underline()
+                                    // 不悬停也是强调色 + 稍加粗，摆在那儿一眼能看到；
+                                    // 悬停时再加淡蓝底与手型光标
+                                    Text(name)
+                                        .fontWeight(.medium)
+                                        .hoverHighlight(idleColor: Color.accentColor)
                                 }
                                 .buttonStyle(.plain)
-                                .foregroundStyle(Color.accentColor)
                                 .help("查看 \(name) 的所有作品")
                             }
                         }
@@ -251,7 +261,14 @@ struct AlbumDetailView: View {
                     HStack(spacing: 14) {
                         stat("eye", album.views)
                         stat("hand.thumbsup", album.likes)
-                        stat("text.bubble", "\(album.commentCount)")
+                        Button {
+                            showingComments = true
+                        } label: {
+                            stat("text.bubble", "\(album.commentCount)")
+                                .hoverHighlight()
+                        }
+                        .buttonStyle(.plain)
+                        .help("查看评论")
                         stat("doc.on.doc", "\(album.totalPhotos)")
                     }
                     .font(.callout)

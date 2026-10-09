@@ -64,6 +64,18 @@ struct Chapter: Sendable {
     let pages: [ComicPage]
 }
 
+/// 评论（JM 移动端 /forum 接口）
+struct AlbumComment: Identifiable, Sendable {
+    let id: String
+    let userName: String
+    let content: String
+    /// 已格式化的时间；取不到就是空串
+    let time: String
+    let likes: Int
+    /// 是回复（parent_CID 非 0）
+    let isReply: Bool
+}
+
 /// 分页结果
 struct PagedAlbums: Sendable {
     let items: [AlbumMeta]

@@ -46,6 +46,67 @@ enum JmParser {
     // MARK: - 分页列表
 
     /// search / latest 通用。latest 是裸数组。
+    /// 评论列表（/forum）。JM 的 content 里包着一层 HTML，这里剥掉标签。
+    static func parseComments(_ json: [String: Any]) -> (items: [AlbumComment], total: Int) {
+        let total = int(json, "total")
+        let raw = (json["list"] as? [[String: Any]]) ?? []
+        let items: [AlbumComment] = raw.compactMap { obj in
+            let id = string(obj, "CID")
+            guard !id.isEmpty else { return nil }
+            let nickname = string(obj, "nickname")
+            let name = nickname.isEmpty ? string(obj, "username") : nickname
+            let parent = string(obj, "parent_CID")
+            return AlbumComment(
+                id: id,
+                userName: name.isEmpty ? "匿名" : name,
+                content: stripHTML(string(obj, "content")),
+                time: commentTime(obj),
+                likes: int(obj, "likes"),
+                isReply: !(parent.isEmpty || parent == "0")
+            )
+        }
+        return (items, total)
+    }
+
+    /// 去掉内容里的 HTML 标签与常见实体
+    private static func stripHTML(_ s: String) -> String {
+        var t = s.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+        for (k, v) in [("&nbsp;", " "), ("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"),
+                       ("&quot;", "\""), ("&#39;", "'")] {
+            t = t.replacingOccurrences(of: k, with: v)
+        }
+        return t.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// 评论时间：服务端给的是 "Oct 09, 2026" 这种英文日期串，
+    /// 解析后转成 "2026-10-09"；失败再退回 update_at（秒级时间戳）；都不行原样返回。
+    private static func commentTime(_ obj: [String: Any]) -> String {
+        let raw = string(obj, "addtime")
+        if !raw.isEmpty {
+            let en = DateFormatter()
+            en.locale = Locale(identifier: "en_US_POSIX")
+            for fmt in ["MMM dd, yyyy", "MMM d, yyyy"] {
+                en.dateFormat = fmt
+                if let d = en.date(from: raw) {
+                    let out = DateFormatter()
+                    out.dateFormat = "yyyy-MM-dd"
+                    return out.string(from: d)
+                }
+            }
+            if Double(raw) != nil { return formatTimestamp(raw) }
+            return raw
+        }
+        return formatTimestamp(string(obj, "update_at"))
+    }
+
+    /// 秒级时间戳字符串 → "2026-10-09 08:50"
+    private static func formatTimestamp(_ raw: String) -> String {
+        guard let ts = Double(raw), ts > 0 else { return "" }
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        return f.string(from: Date(timeIntervalSince1970: ts))
+    }
+
     static func parsePaged(_ json: [String: Any], page: Int) -> PagedAlbums {
         let content: [AlbumMeta]
         if let arr = json["content"] as? [[String: Any]] {
