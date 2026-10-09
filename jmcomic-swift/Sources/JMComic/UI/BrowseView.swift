@@ -71,6 +71,8 @@ enum SidebarItem: Hashable {
 struct BrowseView: View {
 
     @State private var selection: SidebarItem = .feed(.hot)
+    /// 侧边栏是否展开（⌘S 切换，见 App.swift 的命令）
+    @AppStorage("sidebarVisible") private var sidebarVisible = true
     @State private var path: [Route] = []
 
     @StateObject private var library = LibraryStore.shared
@@ -123,7 +125,10 @@ struct BrowseView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: Binding(
+            get: { sidebarVisible ? .all : .detailOnly },
+            set: { sidebarVisible = ($0 != .detailOnly) }
+        )) {
             List(selection: $selection) {
                 Section("内容") {
                     ForEach(Feed.allCases.filter { $0 != .history }) { f in

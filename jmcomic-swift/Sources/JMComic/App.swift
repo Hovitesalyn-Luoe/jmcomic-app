@@ -3,6 +3,9 @@ import AppKit
 
 @main
 struct JMComicApp: App {
+    /// 侧边栏是否展开：BrowseView 用同一个键，⌘S 切换
+    @AppStorage("sidebarVisible") private var sidebarVisible = true
+
     init() {
         if CommandLine.arguments.contains("--selfcheck") { SelfCheck.run() }
         installPrivacyShortcut()
@@ -41,5 +44,13 @@ struct JMComicApp: App {
         }
         .defaultSize(width: 1200, height: 820)
         .windowToolbarStyle(.unified)
+        .commands {
+            CommandGroup(after: .sidebar) {
+                Button(sidebarVisible ? "隐藏侧边栏" : "显示侧边栏") {
+                    sidebarVisible.toggle()
+                }
+                .keyboardShortcut("s", modifiers: .command)
+            }
+        }
     }
 }
