@@ -19,6 +19,14 @@ struct CategoriesView: View {
             case .keyword(let k): return k
             }
         }
+        /// 持久化用的稳定键：分类用 slug，标签加 k: 前缀
+        /// （"其他"在官方分类和子分类里都存在，只用名字会串）
+        var storageKey: String {
+            switch self {
+            case .category(let slug, _): return "c:" + slug
+            case .keyword(let k): return "k:" + k
+            }
+        }
     }
 
     private static let categories: [(String, String)] = [
@@ -65,7 +73,44 @@ struct CategoriesView: View {
             }
         }
         .navigationTitle("分类")
-        .task { await loadTags() }
+        .task {
+            await loadTags()
+            // 恢复上次的勾选，并直接把结果取回来（回到上次的状态）
+            restoreSelectionIfNeeded()
+        }
+    }
+
+    // MARK: - 记住上次的勾选
+
+    private static let savedSelectionKey = "categorySelectionKeys"
+
+    private func saveSelection() {
+        UserDefaults.standard.set(selected.map(\.storageKey), forKey: Self.savedSelectionKey)
+    }
+
+    private static func item(forStorageKey key: String) -> SideItem? {
+        if key.hasPrefix("k:") {
+            let k = String(key.dropFirst(2))
+            return k.isEmpty ? nil : .keyword(k)
+        }
+        if key.hasPrefix("c:") {
+            let slug = String(key.dropFirst(2))
+            if let hit = (categories + subCategories).first(where: { $0.0 == slug }) {
+                return .category(slug: hit.0, name: hit.1)
+            }
+        }
+        return nil
+    }
+
+    private func restoreSelectionIfNeeded() {
+        guard selected.isEmpty else { return }
+        let keys = UserDefaults.standard.stringArray(forKey: Self.savedSelectionKey) ?? []
+        let restored = keys.compactMap { Self.item(forStorageKey: $0) }
+        guard !restored.isEmpty else { return }
+        selected = Set(restored)
+        loadSeq += 1
+        let seq = loadSeq
+        Task { await load(selected, seq: seq) }
     }
 
     // MARK: - 左栏（固定分类列表）
@@ -110,6 +155,7 @@ struct CategoriesView: View {
             var new = selected
             if new.contains(item) { new.remove(item) } else { new.insert(item) }
             selected = new
+            saveSelection()
             // 立即清掉旧结果，避免显示与当前选择无关的内容
             items = []
             error = nil
@@ -162,6 +208,7 @@ struct CategoriesView: View {
                     Spacer()
                     Button("清除选择") {
                         selected.removeAll()
+                        saveSelection()
                         items = []
                     }
                     .buttonStyle(.borderless).font(.caption)
