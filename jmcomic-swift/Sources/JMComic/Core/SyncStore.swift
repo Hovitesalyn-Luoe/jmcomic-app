@@ -190,10 +190,10 @@ final class SyncStore: ObservableObject {
 
     /// 跑一条 git 命令。
     /// - 在后台线程执行并等待：绝不在主线程上阻塞（旧版 `waitUntilExit()` 会把界面冻死）；
-    /// - 带超时兜底（默认 45 秒）：网络卡住时终止进程并返回失败；
-    /// - 显式把系统代理传给子进程（见 `systemProxyEnvironment`）。
+    /// - 有系统代理就走代理，没有就直连（见 `systemProxyEnvironment`）；
+    /// - 超时兜底 15 秒：网络卡住时终止进程并返回失败，界面不受影响。
     private func git(_ args: [String], in dir: URL? = nil, extraAuth: Bool = false,
-                     timeout: TimeInterval = 45) async -> Bool {
+                     timeout: TimeInterval = 15) async -> Bool {
         var finalArgs = args
         if extraAuth, let token = readToken() {
             finalArgs = ["-c", "http.extraHeader=Authorization: Basic "
