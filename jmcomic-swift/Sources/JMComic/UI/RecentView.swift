@@ -38,9 +38,10 @@ struct RecentView: View {
                                 .id(meta.id)
                             }
                         }
-                        .scrollMemory(page: "recent", scrolledID: $scrolledID, topID: library.recentlyViewed.first?.id)
-                .padding(18)
+                        .scrollTargetLayout()
+                        .padding(18)
                     }
+                    .scrollMemory(page: "recent", scrolledID: $scrolledID, topID: library.recentlyViewed.first?.id)
                 }
             }
             .navigationDestination(for: Route.self) { route in

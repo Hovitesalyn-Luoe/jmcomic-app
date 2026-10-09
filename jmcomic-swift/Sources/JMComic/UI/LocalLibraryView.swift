@@ -79,9 +79,10 @@ struct LocalLibraryView: View {
                     }
                 }
             }
-            .scrollMemory(page: "local", scrolledID: $scrolledID, topID: downloads.library.first?.id)
+                .scrollTargetLayout()
             .padding(18)
         }
+            .scrollMemory(page: "local", scrolledID: $scrolledID, topID: downloads.library.first?.id)
     }
 
     private func importFromDisk() {

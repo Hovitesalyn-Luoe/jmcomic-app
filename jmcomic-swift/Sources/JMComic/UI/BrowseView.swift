@@ -262,15 +262,19 @@ struct BrowseView: View {
                 .help("回到顶部")
                 .accessibilityLabel("回到顶部")
             }
-            // 刷新当前列表（热门/最新）；不碰搜索框位置
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    Task { await reload(feed) }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
+            // 刷新当前列表：只在内容页（热门/最新/历史）显示。
+            // 其它页面要么是本地数据，要么自带刷新按钮（如"为你推荐"的"重新推荐"），
+            // 不做条件判断会出现两个刷新图标。
+            if case .feed = selection {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        Task { await reload(feed) }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .help("刷新")
+                    .disabled(searching || feed == .history)
                 }
-                .help("刷新")
-                .disabled(searching || feed == .history)
             }
         }
     }
@@ -308,8 +312,7 @@ struct BrowseView: View {
                         .id(meta.id)
                     }
                 }
-                // 记住/恢复滚动位置 + 响应工具栏「回到顶部」
-                .scrollMemory(page: selection.scrollKey, scrolledID: $scrolledID, topID: shown.first?.id)
+                .scrollTargetLayout()
                 .padding(18)
 
                 if st.loading {
@@ -324,6 +327,8 @@ struct BrowseView: View {
                     restoreTarget = nil
                 }
             }
+            // 记住/恢复滚动位置 + 响应工具栏「回到顶部」
+            .scrollMemory(page: selection.scrollKey, scrolledID: $scrolledID, topID: shown.first?.id)
             .coordinateSpace(name: "jmfeed")
             .onPreferenceChange(ScrollOffsetKey.self) { minY in
                 // 内容顶相对视口顶的偏移（向下为正）

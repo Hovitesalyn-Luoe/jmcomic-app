@@ -253,9 +253,10 @@ struct CategoriesView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .scrollMemory(page: "categories", scrolledID: $scrolledID, topID: items.first?.id)
+                .scrollTargetLayout()
                       .padding(18)
                 }
+                    .scrollMemory(page: "categories", scrolledID: $scrolledID, topID: items.first?.id)
             }
         }
     }

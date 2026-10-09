@@ -99,9 +99,10 @@ struct PersonalizedView: View {
                     .id(meta.id)
                 }
             }
-            .scrollMemory(page: "personalized", scrolledID: $scrolledID, topID: items.first?.id)
-                .padding(18)
+            .scrollTargetLayout()
+            .padding(18)
         }
+        .scrollMemory(page: "personalized", scrolledID: $scrolledID, topID: items.first?.id)
     }
 
     // MARK: - 算法

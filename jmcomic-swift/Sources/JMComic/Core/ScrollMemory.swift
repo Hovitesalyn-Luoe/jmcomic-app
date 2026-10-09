@@ -42,18 +42,22 @@ private struct ScrollMemoryModifier: ViewModifier {
     var remember: Bool = true
     @ObservedObject private var memory = ScrollMemory.shared
 
+    private func restoreIfNeeded() {
+        guard remember, scrolledID == nil,
+              let saved = memory.position(for: page) else { return }
+        scrolledID = saved
+    }
+
     func body(content: Content) -> some View {
         content
             .scrollPosition(id: $scrolledID)
             .onChange(of: scrolledID) { _, newValue in
                 if remember { memory.save(newValue, for: page) }
             }
-            // 内容就绪（topID 从 nil 变成有值）后，若还没有位置就还原上次的
-            .onChange(of: topID) { _, _ in
-                if remember, scrolledID == nil, let saved = memory.position(for: page) {
-                    scrolledID = saved
-                }
-            }
+            // 内容就绪（topID 从 nil 变成有值）后还原上次位置
+            .onChange(of: topID) { _, _ in restoreIfNeeded() }
+            // 页面刚出现时也试一次（多数页面此时内容已在，能立刻定位）
+            .onAppear { restoreIfNeeded() }
             // 工具栏「回到顶部」
             .onChange(of: memory.topRequest(for: page)) { _, _ in
                 if let topID { scrolledID = topID }

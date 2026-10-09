@@ -85,9 +85,10 @@ struct FavoritesView: View {
                         }
                     }
                 }
-                .scrollMemory(page: "favorites", scrolledID: $scrolledID, topID: shown.first?.id)
+                .scrollTargetLayout()
                 .padding(18)
             }
         }
+        .scrollMemory(page: "favorites", scrolledID: $scrolledID, topID: shown.first?.id)
     }
 }
