@@ -167,12 +167,12 @@ actor JmClient {
     // MARK: - 业务接口
 
     func hot(page: Int) async throws -> PagedAlbums {
-        let json = try await getJSON(path: "search", query: [
-            .init(name: "main_tag", value: "0"),
-            .init(name: "search_query", value: ""),
-            .init(name: "o", value: "mv"),
-            .init(name: "t", value: "w"),
+        // 原来的取法是"空关键词 search + o=mv,t=w"。JM 已把它作废：
+        // 现在恒定返回 {"total":0,"content":[]}（服务器原话），于是热门页永远"没有结果"。
+        // 改用分类筛选接口的总列表并按"最多观看"排序，语义与原来的热门一致。
+        let json = try await getJSON(path: "categories/filter", query: [
             .init(name: "page", value: String(page)),
+            .init(name: "o", value: "mv"),
         ])
         return JmParser.parsePaged(json, page: page)
     }
