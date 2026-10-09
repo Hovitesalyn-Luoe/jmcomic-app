@@ -13,11 +13,15 @@ cd "$(dirname "$0")"
 APP_NAME="JMComic"
 BUNDLE_ID="local.jmcomic.reader"
 VERSION="1.2.0"
-BIN_PATH=".build/arm64-apple-macosx/release/${APP_NAME}"
 APP_DIR="dist/${APP_NAME}.app"
 
 echo "==> 构建 release"
 swift build -c release
+
+# 二进制路径交给 SwiftPM 自己报（不同工具链/版本下 .build 布局不一样，
+# 写死路径会在别的机器上直接失败）
+BIN_PATH="$(swift build -c release --show-bin-path)/${APP_NAME}"
+echo "==> 二进制：${BIN_PATH}"
 
 echo "==> 自检"
 "$BIN_PATH" --selfcheck
