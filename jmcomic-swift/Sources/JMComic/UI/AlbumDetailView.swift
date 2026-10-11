@@ -2,30 +2,6 @@ import SwiftUI
 import AppKit
 import CoreGraphics
 
-/// 封面。宽高比固定 3:4，加载中不撑变版面。
-struct CoverImage: View {
-    let albumId: String
-    var width: CGFloat = 132
-
-    @State private var image: CGImage?
-
-    var body: some View {
-        ZStack {
-            if let image {
-                Image(decorative: image, scale: 1.0).resizable().aspectRatio(contentMode: .fill)
-            } else {
-                Rectangle().fill(Color(white: 0.16))
-                    .overlay { ProgressView().controlSize(.small) }
-            }
-        }
-        .frame(width: width, height: width * 4 / 3)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-        .task(id: albumId) {
-            let img = await ImageStore.shared.cover(albumId: albumId)
-            await MainActor.run { self.image = img }
-        }
-    }
-}
 
 struct AlbumDetailView: View {
 
@@ -41,6 +17,8 @@ struct AlbumDetailView: View {
     @State private var error: String?
     @State private var reading: Album?
     @State private var readingChapter = 0
+    /// 本次阅读是否「从头开始」（不恢复进度）
+    @State private var startOver = false
     @State private var showPreviewViewer = false
     @State private var showingComments = false
     @State private var previewIndex = 0
@@ -68,7 +46,7 @@ struct AlbumDetailView: View {
             if let album { await loadPreviews(album) }
         }
         .sheet(item: $reading) { album in
-            ReaderView(album: album, chapterIndex: readingChapter)
+            ReaderView(album: album, chapterIndex: readingChapter, restart: startOver)
                 // id 变化强制重建：修「点第 10 话却打开第 1 话」（sheet item 相同时复用旧实例）
                 .id(readingChapter)
                 .frame(minWidth: 900, idealWidth: 1080, minHeight: 600, idealHeight: 860)
@@ -284,6 +262,7 @@ struct AlbumDetailView: View {
 
                     HStack(spacing: 10) {
                         Button {
+                            startOver = false
                             readingChapter = resumeChapterIndex(album)
                             reading = album
                         } label: {
@@ -295,6 +274,7 @@ struct AlbumDetailView: View {
 
                         if library.position(for: album.id) != nil {
                             Button("从头开始") {
+                                startOver = true
                                 readingChapter = 0
                                 reading = album
                             }
@@ -322,6 +302,7 @@ struct AlbumDetailView: View {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 132), spacing: 8)], spacing: 8) {
                         ForEach(Array(album.chapters.enumerated()), id: \.element.id) { i, c in
                             Button {
+                                startOver = false
                                 readingChapter = i
                                 reading = album
                             } label: {
@@ -418,112 +399,3 @@ struct AlbumDetailView: View {
     }
 }
 
-/// 标签自动换行（胶囊样式）。可传点击回调（分类页点标签搜索用）。
-struct FlowTags: View {
-    let tags: [String]
-    var onTap: ((String) -> Void)? = nil
-
-    var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 56), spacing: 6, alignment: .leading)],
-                  alignment: .leading, spacing: 6) {
-            ForEach(tags, id: \.self) { t in
-                if let onTap {
-                    Button {
-                        onTap(t)
-                    } label: {
-                        tagView(t)
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    tagView(t)
-                }
-            }
-        }
-    }
-
-    private func tagView(_ t: String) -> some View {
-        Text(t).font(.caption)
-            .lineLimit(1)
-            .padding(.horizontal, 9).padding(.vertical, 3)
-            .background(Color.primary.opacity(0.08))
-            .foregroundStyle(.secondary)
-            .clipShape(Capsule())
-    }
-}
-
-/// 预览查看器：与阅读器完全隔离的看图窗口。
-///
-/// 只显示已解码的预览图：左右切换、双击放大，**不调任何 record**——
-/// 不会写历史、不会写进度、不会污染任何阅读状态。
-/// 用完即走，随时可关。
-private struct PreviewViewer: View {
-    let images: [CGImage]
-    @State var startIndex: Int
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var index: Int
-    @State private var zoomed = false
-
-    init(images: [CGImage], startIndex: Int) {
-        self.images = images
-        self.startIndex = startIndex
-        _index = State(initialValue: min(max(startIndex, 0), max(images.count - 1, 0)))
-    }
-
-    var body: some View {
-        ZStack {
-            // 点图片旁边的黑边：直接关闭（不用 Esc/按钮）
-            Color.black.ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture { dismiss() }
-
-            if !images.isEmpty {
-                Image(decorative: images[index], scale: 1.0)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .scaleEffect(zoomed ? 2 : 1)
-                    .onTapGesture(count: 2) { zoomed.toggle() }
-                    // 图片上单击不关闭（空操作拦截，避免误关）
-                    .onTapGesture(count: 1) {}
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-
-            // 左右切换
-            HStack {
-                Button { prev() } label: { Image(systemName: "chevron.left") }
-                    .disabled(index == 0)
-                Spacer()
-                Button { next() } label: { Image(systemName: "chevron.right") }
-                    .disabled(index >= images.count - 1)
-            }
-            .buttonStyle(.plain)
-            .font(.title2)
-            .padding(.horizontal, 18)
-        }
-        .overlay(alignment: .top) {
-            HStack {
-                Text("预览 \(index + 1) / \(images.count)")
-                    .font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                Button("关闭") { dismiss() }
-                    .buttonStyle(.bordered).font(.caption)
-                    .keyboardShortcut(.escape, modifiers: [])
-            }
-            .padding(.horizontal, 14).padding(.vertical, 10)
-        }
-        // 两指向右滑 = 关掉预览（本页翻图用的是左右箭头按钮，不会撞车）
-        .swipeBackToPrevious { dismiss() }
-    }
-
-    private func prev() {
-        guard index > 0 else { return }
-        index -= 1
-        zoomed = false
-    }
-
-    private func next() {
-        guard index < images.count - 1 else { return }
-        index += 1
-        zoomed = false
-    }
-}

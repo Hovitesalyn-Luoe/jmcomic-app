@@ -1,88 +1,6 @@
 import SwiftUI
 import AppKit
 
-enum Route: Hashable {
-    case album(AlbumMeta)
-    /// 作者作品页（JM 没有作者实体，按作者名搜索即为"该作者的所有作品"）
-    case author(String)
-}
-
-enum Feed: String, CaseIterable, Identifiable {
-    case hot = "热门"
-    case latest = "最新"
-    case history = "历史"
-
-    var id: String { rawValue }
-    var icon: String {
-        switch self {
-        case .hot: return "flame"
-        case .latest: return "clock.badge"
-        case .history: return "book.closed"
-        }
-    }
-}
-
-/// 滚动偏移追踪（浏览位置恢复用）
-private struct ScrollOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
-/// 直接把底层 NSScrollView 滚到指定偏移。
-/// scrollPosition/scrollTo 对懒加载视口外的目标不可靠，这是最终兜底：
-/// 一次性定位（targetY 消费后置 nil），不干扰后续用户滚动。
-private struct ScrollRestorer: NSViewRepresentable {
-    var targetY: Double?
-    let onRestored: () -> Void
-
-    func makeNSView(context: Context) -> NSView { NSView() }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        guard let targetY, let scroll = Self.findScrollView(nsView) else { return }
-        let y = CGFloat(targetY)
-        if abs(scroll.contentView.bounds.origin.y - y) > 1 {
-            scroll.contentView.scroll(to: NSPoint(x: 0, y: y))
-            scroll.reflectScrolledClipView(scroll.contentView)
-        }
-        DispatchQueue.main.async { onRestored() }
-    }
-
-    private static func findScrollView(_ v: NSView) -> NSScrollView? {
-        var cur: NSView? = v
-        while let c = cur {
-            if let s = c as? NSScrollView { return s }
-            cur = c.superview
-        }
-        return nil
-    }
-}
-
-/// 侧边栏选中项：内容页 / 推荐 / 收藏 / 本地 / 设置（设置是独立页面，不再是弹窗）
-enum SidebarItem: Hashable {
-    case feed(Feed)
-    case personalized
-    case categories
-    case recent
-    case favorites
-    case local
-    case settings
-
-    /// 滚动位置记忆用的页面键（只在内存里用，重启不保留）
-    var scrollKey: String {
-        switch self {
-        case .feed(let f): return "feed-\(f.rawValue)"
-        case .personalized: return "personalized"
-        case .categories: return "categories"
-        case .recent: return "recent"
-        case .favorites: return "favorites"
-        case .local: return "local"
-        case .settings: return "settings"
-        }
-    }
-}
-
 struct BrowseView: View {
 
     @State private var selection: SidebarItem = .feed(.hot)
@@ -313,13 +231,7 @@ struct BrowseView: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 18) {
                     ForEach(shown) { meta in
                         Button { path.append(.album(meta)) } label: {
-                            VStack(alignment: .leading, spacing: 6) {
-                                CoverImage(albumId: meta.id, width: 150)
-                                Text(meta.title).font(.callout).lineLimit(2)
-                                    .frame(width: 150, alignment: .leading)
-                                Text(meta.authorText).font(.caption).foregroundStyle(.secondary)
-                                    .lineLimit(1).frame(width: 150, alignment: .leading)
-                            }
+                            AlbumCard(albumId: meta.id, title: meta.title, subtitle: meta.authorText)
                         }
                         .buttonStyle(.plain)
                         .id(meta.id)
@@ -476,3 +388,4 @@ struct BrowseView: View {
         feedStates[feed]?.loading = false
     }
 }
+

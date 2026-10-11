@@ -242,13 +242,7 @@ struct CategoriesView: View {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 18) {
                         ForEach(items) { meta in
                             Button { path.append(.album(meta)) } label: {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    CoverImage(albumId: meta.id, width: 150)
-                                    Text(meta.title).font(.callout).lineLimit(2)
-                                        .frame(width: 150, alignment: .leading)
-                                    Text(meta.authorText).font(.caption).foregroundStyle(.secondary)
-                                        .lineLimit(1).frame(width: 150, alignment: .leading)
-                                }
+                                AlbumCard(albumId: meta.id, title: meta.title, subtitle: meta.authorText)
                             }
                             .buttonStyle(.plain)
                         }

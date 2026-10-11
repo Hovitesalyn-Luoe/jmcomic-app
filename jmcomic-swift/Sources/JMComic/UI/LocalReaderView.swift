@@ -12,6 +12,8 @@ struct LocalReaderView: View {
     let chapter: DownloadedChapter
     /// 所属本子（本地阅读进度与在线阅读共用同一份历史）
     let meta: AlbumMeta
+    /// 「从头开始」入口：本次阅读不恢复进度，从第一页起
+    var restart: Bool = false
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var library = LibraryStore.shared
@@ -83,8 +85,9 @@ struct LocalReaderView: View {
             }
             ratios = rs
             pages = urls
-            // 与在线阅读共用进度：同一话则从上次页码继续
-            if let saved = library.position(for: meta.id),
+            // 与在线阅读共用进度：同一话则从上次页码继续（「从头开始」不恢复）
+            if !restart,
+               let saved = library.position(for: meta.id),
                saved.chapterId == chapter.chapterId {
                 restorePage = min(saved.pageIndex, max(0, urls.count - 1))
             }

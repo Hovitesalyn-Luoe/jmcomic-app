@@ -68,11 +68,7 @@ struct FavoritesView: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 18) {
                     ForEach(shown) { entry in
                         Button { path.append(.album(entry.meta)) } label: {
-                            VStack(alignment: .leading, spacing: 6) {
-                                CoverImage(albumId: entry.meta.id, width: 150)
-                                Text(entry.meta.title).font(.callout).lineLimit(2)
-                                    .frame(width: 150, alignment: .leading)
-                            }
+                            AlbumCard(albumId: entry.meta.id, title: entry.meta.title)
                         }
                         .buttonStyle(.plain)
                         .id(entry.meta.id)

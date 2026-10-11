@@ -6,6 +6,8 @@ struct ReaderView: View {
 
     let album: Album
     @State var chapterIndex: Int
+    /// 「从头开始」入口：本次阅读不恢复进度，从第一页起
+    var restart: Bool = false
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var library = LibraryStore.shared
@@ -114,8 +116,9 @@ struct ReaderView: View {
                 ratios[p.id] = await ImageStore.shared.aspectRatio(for: p)
             }
             knownRatios = ratios
-            // 恢复位置只在进度记录的那一话生效
-            if let saved = library.position(for: album.id), saved.chapterId == meta.id {
+            // 恢复位置只在进度记录的那一话生效（「从头开始」不恢复）
+            if !restart,
+               let saved = library.position(for: album.id), saved.chapterId == meta.id {
                 restorePage = min(saved.pageIndex, max(0, c.pages.count - 1))
             } else {
                 restorePage = nil
