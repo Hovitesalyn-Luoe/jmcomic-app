@@ -14,8 +14,8 @@ APP_NAME="JMComic"
 BUNDLE_ID="local.jmcomic.reader"
 VERSION="1.2.0"
 # 本 fork 的发布标记：与 GitHub Release 的 tag 一致，"检查更新"拿它比对。
-# 可用环境变量覆盖：RELEASE_TAG=v1.2.0-fix4 ./build-app.sh
-RELEASE_TAG="${RELEASE_TAG:-v1.2.0-fix4}"
+# 可用环境变量覆盖：RELEASE_TAG=v1.2.0-fix5 ./build-app.sh
+RELEASE_TAG="${RELEASE_TAG:-v1.2.0-fix5}"
 APP_DIR="dist/${APP_NAME}.app"
 
 echo "==> 构建 release"

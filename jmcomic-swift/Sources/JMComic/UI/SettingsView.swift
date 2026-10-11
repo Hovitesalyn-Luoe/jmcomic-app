@@ -23,10 +23,10 @@ struct SettingsView: View {
     @State private var recordingShortcut = false
     @State private var shortcutMonitor: Any?
 
-    // 阅读器默认单页模式
-    @State private var defaultSinglePage = UserDefaults.standard.bool(forKey: "readerSinglePage") {
-        didSet { UserDefaults.standard.set(defaultSinglePage, forKey: "readerSinglePage") }
-    }
+    // 阅读器偏好：@AppStorage 会自动落盘，并且所有界面实时同步
+    @AppStorage(ReaderPrefs.modeKey) private var readerMode: ReaderMode = ReaderPrefs.currentMode()
+    @AppStorage(ReaderPrefs.directionKey) private var spreadDirection: SpreadDirection = ReaderPrefs.currentDirection()
+    @AppStorage(ReaderPrefs.pagingKey) private var readerPaging: PagingStyle = ReaderPrefs.currentPaging()
 
     // GitHub 同步
     @ObservedObject private var syncStore = SyncStore.shared
@@ -192,10 +192,37 @@ struct SettingsView: View {
             Text("本地偏好").font(.headline)
             Toggle("无痕模式（不写历史/进度）", isOn: $library.privateMode)
                 .font(.caption)
-            Toggle("阅读器默认单页模式", isOn: $defaultSinglePage)
-                .font(.caption)
-            Text("单页=一屏一页翻书；连续=长条滚动。阅读器里也能临时切。")
+            Text("阅读方式").font(.subheadline.weight(.medium))
+            Picker("", selection: $readerMode) {
+                ForEach(ReaderMode.allCases) { mode in
+                    Text(mode.label).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            Text("单页=一屏一页；连续=长条滚动；双页=像实体书那样对开（第 1 页单独）。翻页方式选「左右翻页」后可用双指左右滑翻页。")
                 .font(.caption2).foregroundStyle(.secondary)
+
+            if readerMode != .continuous {
+                Picker("翻页方式", selection: $readerPaging) {
+                    ForEach(PagingStyle.allCases) { style in
+                        Text(style.label).tag(style)
+                    }
+                }
+                .font(.caption)
+                .pickerStyle(.menu)
+            }
+
+            if readerMode == .spread {
+                Picker("双页方向", selection: $spreadDirection) {
+                    ForEach(SpreadDirection.allCases) { dir in
+                        Text(dir.label).tag(dir)
+                    }
+                }
+                .font(.caption)
+                .pickerStyle(.menu)
+            }
 
             Divider().padding(.vertical, 2)
 
